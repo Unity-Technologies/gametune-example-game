@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.IO;
 using System.Collections.Generic;
+using UnityEngine.GameTune;
 #if UNITY_ANALYTICS
 using UnityEngine.Analytics;
 #endif
@@ -49,6 +50,8 @@ public class PlayerData
 
     public bool licenceAccepted;
     public bool tutorialDone;
+    public TutorialVersion tutorialVersion = TutorialVersion.Playable;
+    public Answer tutorialAnswer;
 
     public float masterVolume = float.MinValue, musicVolume = float.MinValue, masterSFXVolume = float.MinValue;
 
@@ -152,7 +155,12 @@ public class PlayerData
     public void ClaimMission(MissionBase mission)
     {
         premium += mission.reward;
-
+        GameTune.SetUserAttributes(instance.GetUserAttributesForGameTune());
+        GameTune.RewardEvent("mission_claimed", new Dictionary<string, object>()
+        {
+            { "mission_type", mission.GetMissionType() },
+            { "reward_for_mission", mission.reward }
+        });
 #if UNITY_ANALYTICS // Using Analytics Standard Events v0.3.0
         AnalyticsEvent.ItemAcquired(
             AcquisitionType.Premium, // Currency type
@@ -458,6 +466,54 @@ public class PlayerData
 
         w.Close();
     }
+
+    public Dictionary<string, object> GetUserAttributesForGameTune()
+    {
+        return new Dictionary<string, object>()
+               {
+                   { "first_time_user_experience_lvl", ftueLevel },
+                   { "rank", rank },
+                   { "coins", coins },
+                   { "premium", premium },
+                   { "missions_completed", missions.Count },
+                   { "characters_owned", characters.Count },
+                   { "themes_owned", themes.Count },
+                   { "accessories_owned", characterAccessories.Count },
+                   { "used_character", usedCharacter },
+                   { "used_accessory", usedAccessory },
+                   { "used_theme", usedTheme },
+                   { "tutorial_completed", tutorialDone }
+               };
+    }
+
+    public void SetTutorial(Answer answer)
+    {
+        tutorialAnswer = answer;
+        switch (answer.Value)
+        {
+            case "off":
+                tutorialDone = true;
+                tutorialVersion = TutorialVersion.Off;
+                break;
+            case "playable":
+                tutorialDone = false;
+                break;
+            case "static":
+                tutorialDone = false;
+                tutorialVersion = TutorialVersion.Static;
+                break;
+            default:
+                tutorialDone = true;
+                break;
+        }
+    }
+}
+
+public enum TutorialVersion
+{
+    Playable,
+    Static,
+    Off
 }
 
 // Helper class to cheat in the editor for test purpose

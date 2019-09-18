@@ -829,6 +829,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   iOSGameId: 
   androidGameId: 
+  unityProjectId: 
 --- !u!4 &407103707 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 400000, guid: 9a26112fdfc12324d8fee247fbeb44e7,
@@ -2488,6 +2489,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 082578361b9f9b740aecdad9d973bbaa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  button: {fileID: 1886764181}
+  buttonText: {fileID: 1984010376}
 --- !u!82 &1886764185
 AudioSource:
   m_ObjectHideFlags: 0
@@ -2703,7 +2706,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: START
+  m_Text: Loading...
 --- !u!222 &1984010377
 CanvasRenderer:
   m_ObjectHideFlags: 0

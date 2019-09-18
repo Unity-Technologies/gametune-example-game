@@ -1,5 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine.GameTune;
+
 #if UNITY_ANALYTICS
 using UnityEngine.Analytics;
 #endif
@@ -97,6 +99,15 @@ public class ShopAccessoriesList : ShopList
         PlayerData.instance.premium -= premiumCost;
         PlayerData.instance.AddAccessory(name);
         PlayerData.instance.Save();
+
+        GameTune.SetUserAttributes(PlayerData.instance.GetUserAttributesForGameTune());
+        GameTune.RewardEvent("item_bought", new Dictionary<string, object>()
+        {
+            { "name", name },
+            { "category", "accessory"},
+            { "cost", cost },
+            { "premium_cost", premiumCost }
+        });
 
 #if UNITY_ANALYTICS // Using Analytics Standard Events v0.3.0
         var transactionId = System.Guid.NewGuid().ToString();

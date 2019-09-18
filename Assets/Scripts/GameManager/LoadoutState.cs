@@ -2,6 +2,8 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using UnityEngine.GameTune;
 #if UNITY_ANALYTICS
 using UnityEngine.Analytics;
 #endif
@@ -68,8 +70,35 @@ public class LoadoutState : AState
     protected int k_UILayer;
     protected readonly Quaternion k_FlippedYAxisRotation = Quaternion.Euler(0f, 180f, 0f);
 
+    private Question speedCoefficientQuestion;
+    private Question powerUpChanceCoefficientQuestion;
+    private Question premiumChanceCoefficientQuestion;
+
     public override void Enter(AState from)
     {
+        GameTune.SetUserAttributes(PlayerData.instance.GetUserAttributesForGameTune());
+
+        speedCoefficientQuestion = GameTune.CreateQuestion(
+            "game_speed",
+            TrackManager.speedTiers.Keys.ToArray(),
+            TrackManager.SetMinMaxSpeed
+        );
+
+        powerUpChanceCoefficientQuestion = GameTune.CreateQuestion(
+            "power_up_chance_coefficient",
+            TrackManager.powerUpChanceTier.Keys.ToArray(),
+            TrackManager.SetPowerUpChanceCoefficient
+        );
+
+        premiumChanceCoefficientQuestion = GameTune.CreateQuestion(
+            "premium_chance_coefficient",
+            TrackManager.premiumChanceTier.Keys.ToArray(),
+            AnswerType.ALWAYS_NEW,
+            TrackManager.SetPremiumChanceCoefficient
+        );
+
+        GameTune.AskQuestions(speedCoefficientQuestion, powerUpChanceCoefficientQuestion, premiumChanceCoefficientQuestion);
+
         tutorialBlocker.SetActive(!PlayerData.instance.tutorialDone);
         tutorialPrompt.SetActive(false);
 
@@ -152,7 +181,7 @@ public class LoadoutState : AState
     {
         if (!runButton.interactable)
         {
-            bool interactable = ThemeDatabase.loaded && CharacterDatabase.loaded;
+            bool interactable = ThemeDatabase.loaded && CharacterDatabase.loaded && TrackManager.gametuneAnswers.Count == 3;
             if (interactable)
             {
                 runButton.interactable = true;
@@ -377,7 +406,7 @@ public class LoadoutState : AState
 
     public void StartGame()
     {
-        if (PlayerData.instance.tutorialDone)
+        if (PlayerData.instance.tutorialDone || PlayerData.instance.tutorialVersion == TutorialVersion.Static)
         {
             if (PlayerData.instance.ftueLevel == 1)
             {
@@ -386,11 +415,22 @@ public class LoadoutState : AState
             }
         }
 
+        if (!PlayerData.instance.tutorialDone && PlayerData.instance.tutorialVersion == TutorialVersion.Static)
+        {
+            manager.SwitchState("StaticTutorial");
+            return;
+        }
         manager.SwitchState("Game");
     }
 
     public void Openleaderboard()
     {
+        GameTune.SetUserAttributes(PlayerData.instance.GetUserAttributesForGameTune());
+        GameTune.RewardEvent("opened_leaderboard", new Dictionary<string, object>()
+        {
+            { "location", "loadout" }
+        });
+
         leaderboard.displayPlayer = false;
         leaderboard.forcePlayerDisplay = false;
         leaderboard.Open();

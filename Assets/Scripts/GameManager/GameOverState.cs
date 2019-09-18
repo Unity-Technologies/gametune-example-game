@@ -4,6 +4,7 @@ using UnityEngine.UI;
 using UnityEngine.Analytics;
 #endif
 using System.Collections.Generic;
+using UnityEngine.GameTune;
 
 /// <summary>
 /// state pushed on top of the GameManager when the player dies.
@@ -61,6 +62,12 @@ public class GameOverState : AState
 
     public void OpenLeaderboard()
     {
+        GameTune.SetUserAttributes(PlayerData.instance.GetUserAttributesForGameTune());
+        GameTune.RewardEvent("opened_leaderboard", new Dictionary<string, object>()
+        {
+            { "location", "game_over" }
+        });
+
         fullLeaderboard.forcePlayerDisplay = false;
         fullLeaderboard.displayPlayer = true;
         fullLeaderboard.playerEntry.playerName.text = miniLeaderboard.playerEntry.inputName.text;

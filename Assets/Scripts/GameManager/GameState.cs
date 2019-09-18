@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.Advertisements;
+using UnityEngine.GameTune;
 #if UNITY_ANALYTICS
 using UnityEngine.Analytics;
 #endif
@@ -131,7 +132,7 @@ public class GameState : AState
 
         currentModifier.OnRunStart(this);
 
-        m_IsTutorial = !PlayerData.instance.tutorialDone;
+        m_IsTutorial = !PlayerData.instance.tutorialDone && PlayerData.instance.tutorialVersion == TutorialVersion.Playable;
         trackManager.isTutorial = m_IsTutorial;
 
         if (m_IsTutorial)
@@ -425,6 +426,8 @@ public class GameState : AState
         // and grabbed 2 during that run, we don't want to remove 3, otherwise will have -1 premium for that run!
         trackManager.characterController.premium -= Mathf.Min(trackManager.characterController.premium, 3);
 
+        GameTune.SetUserAttributes(PlayerData.instance.GetUserAttributesForGameTune());
+        GameTune.RewardEvent("premium_for_life_used");
         SecondWind();
     }
 
@@ -437,6 +440,8 @@ public class GameState : AState
 
     public void ShowRewardedAd()
     {
+        GameTune.SetUserAttributes(PlayerData.instance.GetUserAttributesForGameTune());
+        GameTune.RewardEvent("ad_for_life_clicked");
         if (m_GameoverSelectionDone)
             return;
 

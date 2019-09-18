@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEditor;
+using UnityEngine.GameTune;
 
 #if UNITY_ANALYTICS
 using UnityEngine.Analytics;
@@ -33,11 +33,17 @@ public class TrackManager : MonoBehaviour
     public delegate int MultiplierModifier(int current);
     public MultiplierModifier modifyMultiply;
 
+    private static float minSpeed = 10.0f;
+    private static float maxSpeed = 30.0f;
+    private static int speedStep = 4;
+
+    private static float powerUpChanceCoefficient = 0.5f * 0.001f;
+    private static float premiumChanceCoefficient = 0.5f * 0.0001f;
+
+    public static Dictionary<string, Answer> gametuneAnswers = new Dictionary<string, Answer>();
+
     [Header("Character & Movements")]
     public CharacterInputController characterController;
-    public float minSpeed = 5.0f;
-    public float maxSpeed = 10.0f;
-    public int speedStep = 4;
     public float laneOffset = 1.0f;
 
     public bool invincible = false;
@@ -76,6 +82,30 @@ public class TrackManager : MonoBehaviour
     public bool isRerun { get { return m_Rerun; } set { m_Rerun = value; } }
 
     public bool isTutorial { get { return m_IsTutorial; } set { m_IsTutorial = value; } }
+
+    public static Dictionary<string, float[]> speedTiers = new Dictionary<string, float[]>()
+    {
+        { "medium", new[] { 10.0f, 30.0f } },
+        { "slow", new[] { 7.5f, 25.0f } },
+        { "fast", new[] { 12.5f, 35.0f } },
+        { "very_fast", new[] { 15f, 40.0f } },
+    };
+
+    public static Dictionary<string, float> powerUpChanceTier = new Dictionary<string, float>()
+    {
+        { "normal", 0.5f * 0.001f },
+        { "rare", 0.25f * 0.001f },
+        { "often", 0.75f * 0.001f },
+        { "very_often", 1f * 0.001f }
+    };
+
+    public static Dictionary<string, float> premiumChanceTier = new Dictionary<string, float>()
+    {
+        { "normal", 0.5f * 0.0001f },
+        { "rare", 0.25f * 0.0001f },
+        { "often", 0.75f * 0.0001f},
+        { "very_often", 1f * 0.0001f }
+    };
 
     protected float m_TimeToStart = -1.0f;
 
@@ -133,11 +163,51 @@ public class TrackManager : MonoBehaviour
         m_IsMoving = true;
         if (isRestart)
             m_Speed = minSpeed;
+
+        if (gametuneAnswers == null || !PlayerData.instance.tutorialDone) return;
+
+        foreach (var entry in gametuneAnswers)
+        {
+            entry.Value.Use();
+        }
     }
 
     public void StopMove()
     {
         m_IsMoving = false;
+    }
+
+    // GameTune answer handler
+    public static void SetMinMaxSpeed(Answer answer)
+    {
+        gametuneAnswers[answer.Name] = answer;
+
+        if (speedTiers.ContainsKey(answer.Value))
+        {
+            float[] speedTiersArr = speedTiers[answer.Value];
+            minSpeed = speedTiersArr[0];
+            maxSpeed = speedTiersArr[1];
+        }
+    }
+
+    public static void SetPowerUpChanceCoefficient(Answer answer)
+    {
+        gametuneAnswers[answer.Name] = answer;
+
+        if (powerUpChanceTier.ContainsKey(answer.Value))
+        {
+            powerUpChanceCoefficient = powerUpChanceTier[answer.Value];
+        }
+    }
+
+    public static void SetPremiumChanceCoefficient(Answer answer)
+    {
+        gametuneAnswers[answer.Name] = answer;
+
+        if (premiumChanceTier.ContainsKey(answer.Value))
+        {
+            premiumChanceCoefficient = premiumChanceTier[answer.Value];
+        }
     }
 
     IEnumerator WaitToStart()
@@ -532,8 +602,8 @@ public class TrackManager : MonoBehaviour
         float currentWorldPos = 0.0f;
         int currentLane = Random.Range(0, 3);
 
-        float powerupChance = Mathf.Clamp01(Mathf.Floor(m_TimeSincePowerup) * 0.5f * 0.001f);
-        float premiumChance = Mathf.Clamp01(Mathf.Floor(m_TimeSinceLastPremium) * 0.5f * 0.0001f);
+        float powerupChance = Mathf.Clamp01(Mathf.Floor(m_TimeSincePowerup) * powerUpChanceCoefficient);
+        float premiumChance = Mathf.Clamp01(Mathf.Floor(m_TimeSinceLastPremium) * premiumChanceCoefficient);
 
         while (currentWorldPos < segment.worldLength)
         {

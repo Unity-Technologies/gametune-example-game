@@ -23,7 +23,7 @@ Now you git clone should get the LFS files properly. For support of LFS in Git G
 This branch is cloned and slightly modified version of [EndlessRunnerSampleGame](https://github.com/Unity-Technologies/EndlessRunnerSampleGame)
 
 Contents:
-- Trash Dash game 
+- Trash Dash game
 - UnityAds 3.0.1 package and integration
 - UnityGameTune 2.0.0 package
 
